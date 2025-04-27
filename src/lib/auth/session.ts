@@ -1,11 +1,10 @@
 import { db } from "./../db";
 import { encodeBase32LowerCaseNoPadding, encodeHexLowerCase } from "@oslojs/encoding";
 import { sha256 } from "@oslojs/crypto/sha2";
-
-import type { User } from "./user";
 import type { RequestEvent } from "@sveltejs/kit";
+import type { IAuth } from "$lib/interfaces/auth";
 
-export function validateSessionToken(token: string): SessionValidationResult {
+export function validateSessionToken(token: string): IAuth.SessionValidationResult {
 	const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
 	const row = db.queryOne(
 		`
@@ -19,28 +18,28 @@ WHERE session.id = ?
 	if (row === null) {
 		return { session: null, user: null };
 	}
-	const session: Session = {
-		id: row.string(0),
-		userId: row.number(1),
+	const session: IAuth.Session = {
+		_id: row.string(0),
+		userId: row.string(1),
 		expiresAt: new Date(row.number(2) * 1000),
 		twoFactorVerified: Boolean(row.number(3))
 	};
-	const user: User = {
-		id: row.number(4),
+	const user: IAuth.User = {
+		_id: row.string(4),
 		email: row.string(5),
 		username: row.string(6),
 		emailVerified: Boolean(row.number(7)),
 		registered2FA: Boolean(row.number(8))
 	};
 	if (Date.now() >= session.expiresAt.getTime()) {
-		db.execute("DELETE FROM session WHERE id = ?", [session.id]);
+		db.execute("DELETE FROM session WHERE id = ?", [session._id]);
 		return { session: null, user: null };
 	}
 	if (Date.now() >= session.expiresAt.getTime() - 1000 * 60 * 60 * 24 * 15) {
 		session.expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
 		db.execute("UPDATE session SET expires_at = ? WHERE session.id = ?", [
 			Math.floor(session.expiresAt.getTime() / 1000),
-			session.id
+			session._id
 		]);
 	}
 	return { session, user };
@@ -50,7 +49,7 @@ export function invalidateSession(sessionId: string): void {
 	db.execute("DELETE FROM session WHERE id = ?", [sessionId]);
 }
 
-export function invalidateUserSessions(userId: number): void {
+export function invalidateUserSessions(userId: string): void {
 	db.execute("DELETE FROM session WHERE user_id = ?", [userId]);
 }
 
@@ -81,16 +80,16 @@ export function generateSessionToken(): string {
 	return token;
 }
 
-export function createSession(token: string, userId: number, flags: SessionFlags): Session {
+export function createSession(token: string, userId: string, flags: IAuth.SessionFlags): IAuth.Session {
 	const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
-	const session: Session = {
-		id: sessionId,
+	const session: IAuth.Session = {
+		_id: sessionId,
 		userId,
 		expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30),
 		twoFactorVerified: flags.twoFactorVerified
 	};
 	db.execute("INSERT INTO session (id, user_id, expires_at, two_factor_verified) VALUES (?, ?, ?, ?)", [
-		session.id,
+		session._id,
 		session.userId,
 		Math.floor(session.expiresAt.getTime() / 1000),
 		Number(session.twoFactorVerified)
@@ -101,15 +100,3 @@ export function createSession(token: string, userId: number, flags: SessionFlags
 export function setSessionAs2FAVerified(sessionId: string): void {
 	db.execute("UPDATE session SET two_factor_verified = 1 WHERE id = ?", [sessionId]);
 }
-
-export interface SessionFlags {
-	twoFactorVerified: boolean;
-}
-
-export interface Session extends SessionFlags {
-	id: string;
-	expiresAt: Date;
-	userId: number;
-}
-
-type SessionValidationResult = { session: Session; user: User } | { session: null; user: null };

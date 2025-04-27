@@ -5,16 +5,10 @@ import {
 } from "$lib/auth/password-reset";
 import { fail, redirect } from "@sveltejs/kit";
 import { verifyPasswordStrength } from "$lib/auth/password";
-import {
-	createSession,
-	generateSessionToken,
-	invalidateUserSessions,
-	setSessionTokenCookie
-} from "$lib/auth/session";
+import { createSession, generateSessionToken, invalidateUserSessions, setSessionTokenCookie } from "$lib/auth/session";
 import { updateUserPassword } from "$lib/auth/user";
-
 import type { Actions, RequestEvent } from "./$types";
-import type { SessionFlags } from "$lib/auth/session";
+import type { IAuth } from "$lib/interfaces/auth";
 
 export async function load(event: RequestEvent) {
 	const { session, user } = validatePasswordResetSessionRequest(event);
@@ -69,11 +63,11 @@ async function action(event: RequestEvent) {
 	invalidateUserSessions(passwordResetSession.userId);
 	await updateUserPassword(passwordResetSession.userId, password);
 
-	const sessionFlags: SessionFlags = {
+	const sessionFlags: IAuth.SessionFlags = {
 		twoFactorVerified: passwordResetSession.twoFactorVerified
 	};
 	const sessionToken = generateSessionToken();
-	const session = createSession(sessionToken, user.id, sessionFlags);
+	const session = createSession(sessionToken, user._id, sessionFlags);
 	setSessionTokenCookie(event, sessionToken, session.expiresAt);
 	deletePasswordResetSessionTokenCookie(event);
 	return redirect(302, "/");

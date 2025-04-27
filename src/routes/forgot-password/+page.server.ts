@@ -13,7 +13,7 @@ import { fail, redirect } from "@sveltejs/kit";
 import type { Actions, RequestEvent } from "./$types";
 
 const ipBucket = new RefillingTokenBucket<string>(3, 60);
-const userBucket = new RefillingTokenBucket<number>(3, 60);
+const userBucket = new RefillingTokenBucket<string>(3, 60);
 
 export const actions: Actions = {
 	default: action
@@ -56,15 +56,15 @@ async function action(event: RequestEvent) {
 			email
 		});
 	}
-	if (!userBucket.consume(user.id, 1)) {
+	if (!userBucket.consume(user._id, 1)) {
 		return fail(400, {
 			message: "Too many requests",
 			email
 		});
 	}
-	invalidateUserPasswordResetSessions(user.id);
+	invalidateUserPasswordResetSessions(user._id);
 	const sessionToken = generateSessionToken();
-	const session = createPasswordResetSession(sessionToken, user.id, user.email);
+	const session = createPasswordResetSession(sessionToken, user._id, user.email);
 	sendPasswordResetEmail(session.email, session.code);
 	setPasswordResetSessionTokenCookie(event, sessionToken, session.expiresAt);
 	return redirect(302, "/reset-password/verify-email");

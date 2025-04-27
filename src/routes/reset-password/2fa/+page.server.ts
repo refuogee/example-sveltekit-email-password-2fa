@@ -94,7 +94,7 @@ async function totpAction(event: RequestEvent) {
 		});
 	}
 	totpBucket.reset(session.userId);
-	setPasswordResetSessionAs2FAVerified(session.id);
+	setPasswordResetSessionAs2FAVerified(session._id);
 	return redirect(302, "/reset-password");
 }
 

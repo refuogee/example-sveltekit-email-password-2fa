@@ -4,12 +4,12 @@ import { generateRandomOTP } from "./../utils";
 import { sha256 } from "@oslojs/crypto/sha2";
 
 import type { RequestEvent } from "@sveltejs/kit";
-import type { User } from "./user";
+import type { IAuth } from "$lib/interfaces/auth";
 
-export function createPasswordResetSession(token: string, userId: number, email: string): PasswordResetSession {
+export function createPasswordResetSession(token: string, userId: string, email: string): IAuth.PasswordResetSession {
 	const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
-	const session: PasswordResetSession = {
-		id: sessionId,
+	const session: IAuth.PasswordResetSession = {
+		_id: sessionId,
 		userId,
 		email,
 		expiresAt: new Date(Date.now() + 1000 * 60 * 10),
@@ -18,7 +18,7 @@ export function createPasswordResetSession(token: string, userId: number, email:
 		twoFactorVerified: false
 	};
 	db.execute("INSERT INTO password_reset_session (id, user_id, email, code, expires_at) VALUES (?, ?, ?, ?, ?)", [
-		session.id,
+		session._id,
 		session.userId,
 		session.email,
 		session.code,
@@ -27,7 +27,7 @@ export function createPasswordResetSession(token: string, userId: number, email:
 	return session;
 }
 
-export function validatePasswordResetSessionToken(token: string): PasswordResetSessionValidationResult {
+export function validatePasswordResetSessionToken(token: string): IAuth.PasswordResetSessionValidationResult {
 	const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
 	const row = db.queryOne(
 		`SELECT password_reset_session.id, password_reset_session.user_id, password_reset_session.email, password_reset_session.code, password_reset_session.expires_at, password_reset_session.email_verified, password_reset_session.two_factor_verified,
@@ -39,24 +39,24 @@ WHERE password_reset_session.id = ?`,
 	if (row === null) {
 		return { session: null, user: null };
 	}
-	const session: PasswordResetSession = {
-		id: row.string(0),
-		userId: row.number(1),
+	const session: IAuth.PasswordResetSession = {
+		_id: row.string(0),
+		userId: row.string(1),
 		email: row.string(2),
 		code: row.string(3),
 		expiresAt: new Date(row.number(4) * 1000),
 		emailVerified: Boolean(row.number(5)),
 		twoFactorVerified: Boolean(row.number(6))
 	};
-	const user: User = {
-		id: row.number(7),
+	const user: IAuth.User = {
+		_id: row.string(7),
 		email: row.string(8),
 		username: row.string(9),
 		emailVerified: Boolean(row.number(10)),
 		registered2FA: Boolean(row.number(11))
 	};
 	if (Date.now() >= session.expiresAt.getTime()) {
-		db.execute("DELETE FROM password_reset_session WHERE id = ?", [session.id]);
+		db.execute("DELETE FROM password_reset_session WHERE id = ?", [session._id]);
 		return { session: null, user: null };
 	}
 	return { session, user };
@@ -70,11 +70,11 @@ export function setPasswordResetSessionAs2FAVerified(sessionId: string): void {
 	db.execute("UPDATE password_reset_session SET two_factor_verified = 1 WHERE id = ?", [sessionId]);
 }
 
-export function invalidateUserPasswordResetSessions(userId: number): void {
+export function invalidateUserPasswordResetSessions(userId: string): void {
 	db.execute("DELETE FROM password_reset_session WHERE user_id = ?", [userId]);
 }
 
-export function validatePasswordResetSessionRequest(event: RequestEvent): PasswordResetSessionValidationResult {
+export function validatePasswordResetSessionRequest(event: RequestEvent): IAuth.PasswordResetSessionValidationResult {
 	const token = event.cookies.get("password_reset_session") ?? null;
 	if (token === null) {
 		return { session: null, user: null };
@@ -109,17 +109,3 @@ export function deletePasswordResetSessionTokenCookie(event: RequestEvent): void
 export function sendPasswordResetEmail(email: string, code: string): void {
 	console.log(`To ${email}: Your reset code is ${code}`);
 }
-
-export interface PasswordResetSession {
-	id: string;
-	userId: number;
-	email: string;
-	expiresAt: Date;
-	code: string;
-	emailVerified: boolean;
-	twoFactorVerified: boolean;
-}
-
-export type PasswordResetSessionValidationResult =
-	| { session: PasswordResetSession; user: User }
-	| { session: null; user: null };

@@ -2,12 +2,13 @@ import { db } from "./../db";
 import { decrypt, decryptToString, encrypt, encryptString } from "./encryption";
 import { hashPassword } from "./password";
 import { generateRandomRecoveryCode } from "./../utils";
+import type { IAuth } from "$lib/interfaces/auth";
 
 export function verifyUsernameInput(username: string): boolean {
 	return username.length > 3 && username.length < 32 && username.trim() === username;
 }
 
-export async function createUser(email: string, username: string, password: string): Promise<User> {
+export async function createUser(email: string, username: string, password: string): Promise<IAuth.User> {
 	const passwordHash = await hashPassword(password);
 	const recoveryCode = generateRandomRecoveryCode();
 	const encryptedRecoveryCode = encryptString(recoveryCode);
@@ -18,8 +19,8 @@ export async function createUser(email: string, username: string, password: stri
 	if (row === null) {
 		throw new Error("Unexpected error");
 	}
-	const user: User = {
-		id: row.number(0),
+	const user: IAuth.User = {
+		_id: row.string(0),
 		username,
 		email,
 		emailVerified: false,
@@ -28,21 +29,21 @@ export async function createUser(email: string, username: string, password: stri
 	return user;
 }
 
-export async function updateUserPassword(userId: number, password: string): Promise<void> {
+export async function updateUserPassword(userId: string, password: string): Promise<void> {
 	const passwordHash = await hashPassword(password);
 	db.execute("UPDATE user SET password_hash = ? WHERE id = ?", [passwordHash, userId]);
 }
 
-export function updateUserEmailAndSetEmailAsVerified(userId: number, email: string): void {
+export function updateUserEmailAndSetEmailAsVerified(userId: string, email: string): void {
 	db.execute("UPDATE user SET email = ?, email_verified = 1 WHERE id = ?", [email, userId]);
 }
 
-export function setUserAsEmailVerifiedIfEmailMatches(userId: number, email: string): boolean {
+export function setUserAsEmailVerifiedIfEmailMatches(userId: string, email: string): boolean {
 	const result = db.execute("UPDATE user SET email_verified = 1 WHERE id = ? AND email = ?", [userId, email]);
 	return result.changes > 0;
 }
 
-export function getUserPasswordHash(userId: number): string {
+export function getUserPasswordHash(userId: string): string {
 	const row = db.queryOne("SELECT password_hash FROM user WHERE id = ?", [userId]);
 	if (row === null) {
 		throw new Error("Invalid user ID");
@@ -50,7 +51,7 @@ export function getUserPasswordHash(userId: number): string {
 	return row.string(0);
 }
 
-export function getUserRecoverCode(userId: number): string {
+export function getUserRecoverCode(userId: string): string {
 	const row = db.queryOne("SELECT recovery_code FROM user WHERE id = ?", [userId]);
 	if (row === null) {
 		throw new Error("Invalid user ID");
@@ -58,7 +59,7 @@ export function getUserRecoverCode(userId: number): string {
 	return decryptToString(row.bytes(0));
 }
 
-export function getUserTOTPKey(userId: number): Uint8Array | null {
+export function getUserTOTPKey(userId: string): Uint8Array | null {
 	const row = db.queryOne("SELECT totp_key FROM user WHERE id = ?", [userId]);
 	if (row === null) {
 		throw new Error("Invalid user ID");
@@ -70,19 +71,19 @@ export function getUserTOTPKey(userId: number): Uint8Array | null {
 	return decrypt(encrypted);
 }
 
-export function updateUserTOTPKey(userId: number, key: Uint8Array): void {
+export function updateUserTOTPKey(userId: string, key: Uint8Array): void {
 	const encrypted = encrypt(key);
 	db.execute("UPDATE user SET totp_key = ? WHERE id = ?", [encrypted, userId]);
 }
 
-export function resetUserRecoveryCode(userId: number): string {
+export function resetUserRecoveryCode(userId: string): string {
 	const recoveryCode = generateRandomRecoveryCode();
 	const encrypted = encryptString(recoveryCode);
 	db.execute("UPDATE user SET recovery_code = ? WHERE id = ?", [encrypted, userId]);
 	return recoveryCode;
 }
 
-export function getUserFromEmail(email: string): User | null {
+export function getUserFromEmail(email: string): IAuth.User | null {
 	const row = db.queryOne(
 		"SELECT id, email, username, email_verified, IIF(totp_key IS NOT NULL, 1, 0) FROM user WHERE email = ?",
 		[email]
@@ -90,20 +91,12 @@ export function getUserFromEmail(email: string): User | null {
 	if (row === null) {
 		return null;
 	}
-	const user: User = {
-		id: row.number(0),
+	const user: IAuth.User = {
+		_id: row.string(0),
 		email: row.string(1),
 		username: row.string(2),
 		emailVerified: Boolean(row.number(3)),
 		registered2FA: Boolean(row.number(4))
 	};
 	return user;
-}
-
-export interface User {
-	id: number;
-	email: string;
-	username: string;
-	emailVerified: boolean;
-	registered2FA: boolean;
 }

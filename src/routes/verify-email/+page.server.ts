@@ -33,7 +33,7 @@ export async function load(event: RequestEvent) {
 	};
 }
 
-const bucket = new ExpiringTokenBucket<number>(5, 60 * 30);
+const bucket = new ExpiringTokenBucket<string>(5, 60 * 30);
 
 export const actions: Actions = {
 	verify: verifyCode,

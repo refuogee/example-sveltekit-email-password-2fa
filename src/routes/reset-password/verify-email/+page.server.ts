@@ -1,14 +1,11 @@
-import {
-	validatePasswordResetSessionRequest,
-	setPasswordResetSessionAsEmailVerified
-} from "$lib/auth/password-reset";
+import { validatePasswordResetSessionRequest, setPasswordResetSessionAsEmailVerified } from "$lib/auth/password-reset";
 import { ExpiringTokenBucket } from "$lib/auth/rate-limit";
 import { setUserAsEmailVerifiedIfEmailMatches } from "$lib/auth/user";
 import { fail, redirect } from "@sveltejs/kit";
 
 import type { Actions, RequestEvent } from "./$types";
 
-const bucket = new ExpiringTokenBucket<number>(5, 60 * 30);
+const bucket = new ExpiringTokenBucket<string>(5, 60 * 30);
 
 export async function load(event: RequestEvent) {
 	const { session } = validatePasswordResetSessionRequest(event);
@@ -69,7 +66,7 @@ async function action(event: RequestEvent) {
 		});
 	}
 	bucket.reset(session.userId);
-	setPasswordResetSessionAsEmailVerified(session.id);
+	setPasswordResetSessionAsEmailVerified(session._id);
 	const emailMatches = setUserAsEmailVerifiedIfEmailMatches(session.userId, session.email);
 	if (!emailMatches) {
 		return fail(400, {

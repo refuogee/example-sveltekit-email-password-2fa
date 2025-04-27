@@ -1,3 +1,5 @@
+import type { IAuth } from "$lib/interfaces/auth";
+
 export class RefillingTokenBucket<_Key> {
 	public max: number;
 	public refillIntervalSeconds: number;
@@ -7,7 +9,7 @@ export class RefillingTokenBucket<_Key> {
 		this.refillIntervalSeconds = refillIntervalSeconds;
 	}
 
-	private storage = new Map<_Key, RefillBucket>();
+	private storage = new Map<_Key, IAuth.RefillBucket>();
 
 	public check(key: _Key, cost: number): boolean {
 		const bucket = this.storage.get(key) ?? null;
@@ -48,7 +50,7 @@ export class RefillingTokenBucket<_Key> {
 export class Throttler<_Key> {
 	public timeoutSeconds: number[];
 
-	private storage = new Map<_Key, ThrottlingCounter>();
+	private storage = new Map<_Key, IAuth.ThrottlingCounter>();
 
 	constructor(timeoutSeconds: number[]) {
 		this.timeoutSeconds = timeoutSeconds;
@@ -84,7 +86,7 @@ export class ExpiringTokenBucket<_Key> {
 	public max: number;
 	public expiresInSeconds: number;
 
-	private storage = new Map<_Key, ExpiringBucket>();
+	private storage = new Map<_Key, IAuth.ExpiringBucket>();
 
 	constructor(max: number, expiresInSeconds: number) {
 		this.max = max;
@@ -128,19 +130,4 @@ export class ExpiringTokenBucket<_Key> {
 	public reset(key: _Key): void {
 		this.storage.delete(key);
 	}
-}
-
-interface RefillBucket {
-	count: number;
-	refilledAt: number;
-}
-
-interface ExpiringBucket {
-	count: number;
-	createdAt: number;
-}
-
-interface ThrottlingCounter {
-	timeout: number;
-	updatedAt: number;
 }

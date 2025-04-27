@@ -8,13 +8,9 @@ import {
 	sendVerificationEmail,
 	setEmailVerificationRequestCookie
 } from "../../lib/auth/email-verification";
-import {
-	createSession,
-	generateSessionToken,
-	setSessionTokenCookie,
-	type SessionFlags
-} from "../../lib/auth/session";
+import { createSession, generateSessionToken, setSessionTokenCookie } from "../../lib/auth/session";
 import type { Actions, PageServerLoadEvent, RequestEvent } from "../$types";
+import type { IAuth } from "$lib/interfaces/auth";
 
 const ipBucket = new RefillingTokenBucket<string>(3, 10);
 
@@ -105,15 +101,15 @@ async function action(event: RequestEvent) {
 		});
 	}
 	const user = await createUser(email, username, password);
-	const emailVerificationRequest = createEmailVerificationRequest(user.id, user.email);
+	const emailVerificationRequest = createEmailVerificationRequest(user._id, user.email);
 	sendVerificationEmail(emailVerificationRequest.email, emailVerificationRequest.code);
 	setEmailVerificationRequestCookie(event, emailVerificationRequest);
 
-	const sessionFlags: SessionFlags = {
+	const sessionFlags: IAuth.SessionFlags = {
 		twoFactorVerified: false
 	};
 	const sessionToken = generateSessionToken();
-	const session = createSession(sessionToken, user.id, sessionFlags);
+	const session = createSession(sessionToken, user._id, sessionFlags);
 	setSessionTokenCookie(event, sessionToken, session.expiresAt);
 	throw redirect(302, "/2fa/setup");
 }

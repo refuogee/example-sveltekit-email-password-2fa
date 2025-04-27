@@ -8,16 +8,10 @@ import { fail, redirect } from "@sveltejs/kit";
 import { checkEmailAvailability, verifyEmailInput } from "$lib/auth/email";
 import { verifyPasswordHash, verifyPasswordStrength } from "$lib/auth/password";
 import { getUserPasswordHash, getUserRecoverCode, updateUserPassword } from "$lib/auth/user";
-import {
-	createSession,
-	generateSessionToken,
-	invalidateUserSessions,
-	setSessionTokenCookie
-} from "$lib/auth/session";
+import { createSession, generateSessionToken, invalidateUserSessions, setSessionTokenCookie } from "$lib/auth/session";
 import { ExpiringTokenBucket } from "$lib/auth/rate-limit";
-
 import type { Actions, RequestEvent } from "./$types";
-import type { SessionFlags } from "$lib/auth/session";
+import type { IAuth } from "$lib/interfaces/auth";
 
 const passwordUpdateBucket = new ExpiringTokenBucket<string>(5, 60 * 30);
 
@@ -107,7 +101,7 @@ async function updatePasswordAction(event: RequestEvent) {
 	await updateUserPassword(event.locals.user.id, newPassword);
 
 	const sessionToken = generateSessionToken();
-	const sessionFlags: SessionFlags = {
+	const sessionFlags: IAuth.SessionFlags = {
 		twoFactorVerified: event.locals.session.twoFactorVerified
 	};
 	const session = createSession(sessionToken, event.locals.user.id, sessionFlags);

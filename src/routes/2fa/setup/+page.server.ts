@@ -8,7 +8,7 @@ import { renderSVG } from "uqr";
 
 import type { Actions, RequestEvent } from "./$types";
 
-const totpUpdateBucket = new RefillingTokenBucket<number>(3, 60 * 10);
+const totpUpdateBucket = new RefillingTokenBucket<string>(3, 60 * 10);
 
 export async function load(event: RequestEvent) {
 	if (event.locals.session === null || event.locals.user === null) {

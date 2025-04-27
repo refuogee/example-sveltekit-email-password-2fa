@@ -5,8 +5,9 @@ import { RefillingTokenBucket, Throttler } from "$lib/auth/rate-limit";
 import { verifyPasswordHash } from "$lib/auth/password";
 import { createSession, generateSessionToken, setSessionTokenCookie } from "$lib/auth/session";
 
-import type { SessionFlags } from "$lib/auth/session";
+
 import type { Actions, PageServerLoadEvent, RequestEvent } from "./$types";
+import type { IAuth } from "$lib/interfaces/auth";
 
 export function load(event: PageServerLoadEvent) {
 	if (event.locals.session !== null && event.locals.user !== null) {
@@ -24,7 +25,7 @@ export function load(event: PageServerLoadEvent) {
 	return {};
 }
 
-const throttler = new Throttler<number>([0, 1, 2, 4, 8, 16, 30, 60, 180, 300]);
+const throttler = new Throttler<string>([0, 1, 2, 4, 8, 16, 30, 60, 180, 300]);
 const ipBucket = new RefillingTokenBucket<string>(20, 1);
 
 export const actions: Actions = {
@@ -75,13 +76,13 @@ async function action(event: RequestEvent) {
 			email: ""
 		});
 	}
-	if (!throttler.consume(user.id)) {
+	if (!throttler.consume(user._id)) {
 		return fail(429, {
 			message: "Too many requests",
 			email: ""
 		});
 	}
-	const passwordHash = getUserPasswordHash(user.id);
+	const passwordHash = getUserPasswordHash(user._id);
 	const validPassword = await verifyPasswordHash(passwordHash, password);
 	if (!validPassword) {
 		return fail(400, {
@@ -89,12 +90,12 @@ async function action(event: RequestEvent) {
 			email
 		});
 	}
-	throttler.reset(user.id);
-	const sessionFlags: SessionFlags = {
+	throttler.reset(user._id);
+	const sessionFlags: IAuth.SessionFlags = {
 		twoFactorVerified: false
 	};
 	const sessionToken = generateSessionToken();
-	const session = createSession(sessionToken, user.id, sessionFlags);
+	const session = createSession(sessionToken, user._id, sessionFlags);
 	setSessionTokenCookie(event, sessionToken, session.expiresAt);
 
 	if (!user.emailVerified) {
