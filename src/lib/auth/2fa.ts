@@ -1,7 +1,7 @@
-import { db } from "./db";
+import { db } from "./../db";
 import { decryptToString, encryptString } from "./encryption";
 import { ExpiringTokenBucket } from "./rate-limit";
-import { generateRandomRecoveryCode } from "./utils";
+import { generateRandomRecoveryCode } from "./../utils";
 
 export const totpBucket = new ExpiringTokenBucket<number>(5, 60 * 30);
 export const recoveryCodeBucket = new ExpiringTokenBucket<number>(3, 60 * 60);

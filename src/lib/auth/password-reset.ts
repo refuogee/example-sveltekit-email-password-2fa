@@ -1,6 +1,6 @@
-import { db } from "./db";
+import { db } from "./../db";
 import { encodeHexLowerCase } from "@oslojs/encoding";
-import { generateRandomOTP } from "./utils";
+import { generateRandomOTP } from "./../utils";
 import { sha256 } from "@oslojs/crypto/sha2";
 
 import type { RequestEvent } from "@sveltejs/kit";

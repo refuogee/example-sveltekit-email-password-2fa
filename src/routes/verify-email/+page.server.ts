@@ -7,10 +7,10 @@ import {
 	sendVerificationEmail,
 	sendVerificationEmailBucket,
 	setEmailVerificationRequestCookie
-} from "$lib/server/email-verification";
-import { invalidateUserPasswordResetSessions } from "$lib/server/password-reset";
-import { updateUserEmailAndSetEmailAsVerified } from "$lib/server/user";
-import { ExpiringTokenBucket } from "$lib/server/rate-limit";
+} from "$lib/auth/email-verification";
+import { invalidateUserPasswordResetSessions } from "$lib/auth/password-reset";
+import { updateUserEmailAndSetEmailAsVerified } from "$lib/auth/user";
+import { ExpiringTokenBucket } from "$lib/auth/rate-limit";
 
 import type { Actions, RequestEvent } from "./$types";
 

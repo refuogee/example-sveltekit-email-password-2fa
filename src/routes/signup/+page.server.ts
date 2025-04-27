@@ -1,19 +1,19 @@
 import { fail, redirect } from "@sveltejs/kit";
-import { RefillingTokenBucket } from "./../../lib/server/auth/rate-limit";
-import { checkEmailAvailability, verifyEmailInput } from "./../../lib/server/auth/email";
-import { createUser, verifyUsernameInput } from "./../../lib/server/auth/user";
-import { verifyPasswordStrength } from "./../../lib/server/auth/password";
+import { RefillingTokenBucket } from "../../lib/auth/rate-limit";
+import { checkEmailAvailability, verifyEmailInput } from "../../lib/auth/email";
+import { createUser, verifyUsernameInput } from "../../lib/auth/user";
+import { verifyPasswordStrength } from "../../lib/auth/password";
 import {
 	createEmailVerificationRequest,
 	sendVerificationEmail,
 	setEmailVerificationRequestCookie
-} from "./../../lib/server/auth/email-verification";
+} from "../../lib/auth/email-verification";
 import {
 	createSession,
 	generateSessionToken,
 	setSessionTokenCookie,
 	type SessionFlags
-} from "./../../lib/server/auth/session";
+} from "../../lib/auth/session";
 import type { Actions, PageServerLoadEvent, RequestEvent } from "../$types";
 
 const ipBucket = new RefillingTokenBucket<string>(3, 10);

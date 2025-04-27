@@ -1,5 +1,5 @@
-import { generateRandomOTP } from "./utils";
-import { db } from "./db";
+import { generateRandomOTP } from "./../utils";
+import { db } from "./../db";
 import { ExpiringTokenBucket } from "./rate-limit";
 import { encodeBase32 } from "@oslojs/encoding";
 

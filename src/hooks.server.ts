@@ -1,5 +1,5 @@
-import { RefillingTokenBucket } from "$lib/server/rate-limit";
-import { validateSessionToken, setSessionTokenCookie, deleteSessionTokenCookie } from "$lib/server/session";
+import { RefillingTokenBucket } from "$lib/auth/rate-limit";
+import { validateSessionToken, setSessionTokenCookie, deleteSessionTokenCookie } from "$lib/auth/session";
 import { sequence } from "@sveltejs/kit/hooks";
 
 import type { Handle } from "@sveltejs/kit";

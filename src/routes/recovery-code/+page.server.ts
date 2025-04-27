@@ -1,4 +1,4 @@
-import { getUserRecoverCode } from "$lib/server/user";
+import { getUserRecoverCode } from "$lib/auth/user";
 import { redirect } from "@sveltejs/kit";
 
 import type { RequestEvent } from "./$types";

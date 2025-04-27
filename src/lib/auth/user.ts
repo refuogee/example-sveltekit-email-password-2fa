@@ -1,7 +1,7 @@
-import { db } from "./db";
+import { db } from "./../db";
 import { decrypt, decryptToString, encrypt, encryptString } from "./encryption";
 import { hashPassword } from "./password";
-import { generateRandomRecoveryCode } from "./utils";
+import { generateRandomRecoveryCode } from "./../utils";
 
 export function verifyUsernameInput(username: string): boolean {
 	return username.length > 3 && username.length < 32 && username.trim() === username;

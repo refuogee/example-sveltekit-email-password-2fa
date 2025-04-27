@@ -1,9 +1,9 @@
 import {
 	validatePasswordResetSessionRequest,
 	setPasswordResetSessionAsEmailVerified
-} from "$lib/server/password-reset";
-import { ExpiringTokenBucket } from "$lib/server/rate-limit";
-import { setUserAsEmailVerifiedIfEmailMatches } from "$lib/server/user";
+} from "$lib/auth/password-reset";
+import { ExpiringTokenBucket } from "$lib/auth/rate-limit";
+import { setUserAsEmailVerifiedIfEmailMatches } from "$lib/auth/user";
 import { fail, redirect } from "@sveltejs/kit";
 
 import type { Actions, RequestEvent } from "./$types";

@@ -1,11 +1,11 @@
 import { fail, redirect } from "@sveltejs/kit";
-import { verifyEmailInput } from "$lib/server/email";
-import { getUserFromEmail, getUserPasswordHash } from "$lib/server/user";
-import { RefillingTokenBucket, Throttler } from "$lib/server/rate-limit";
-import { verifyPasswordHash } from "$lib/server/password";
-import { createSession, generateSessionToken, setSessionTokenCookie } from "$lib/server/session";
+import { verifyEmailInput } from "$lib/auth/email";
+import { getUserFromEmail, getUserPasswordHash } from "$lib/auth/user";
+import { RefillingTokenBucket, Throttler } from "$lib/auth/rate-limit";
+import { verifyPasswordHash } from "$lib/auth/password";
+import { createSession, generateSessionToken, setSessionTokenCookie } from "$lib/auth/session";
 
-import type { SessionFlags } from "$lib/server/session";
+import type { SessionFlags } from "$lib/auth/session";
 import type { Actions, PageServerLoadEvent, RequestEvent } from "./$types";
 
 export function load(event: PageServerLoadEvent) {

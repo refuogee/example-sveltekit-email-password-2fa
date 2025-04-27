@@ -1,13 +1,13 @@
-import { verifyEmailInput } from "$lib/server/email";
-import { getUserFromEmail } from "$lib/server/user";
+import { verifyEmailInput } from "$lib/auth/email";
+import { getUserFromEmail } from "$lib/auth/user";
 import {
 	createPasswordResetSession,
 	invalidateUserPasswordResetSessions,
 	sendPasswordResetEmail,
 	setPasswordResetSessionTokenCookie
-} from "$lib/server/password-reset";
-import { RefillingTokenBucket } from "$lib/server/rate-limit";
-import { generateSessionToken } from "$lib/server/session";
+} from "$lib/auth/password-reset";
+import { RefillingTokenBucket } from "$lib/auth/rate-limit";
+import { generateSessionToken } from "$lib/auth/session";
 import { fail, redirect } from "@sveltejs/kit";
 
 import type { Actions, RequestEvent } from "./$types";

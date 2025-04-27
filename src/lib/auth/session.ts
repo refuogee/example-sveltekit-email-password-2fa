@@ -1,4 +1,4 @@
-import { db } from "./db";
+import { db } from "./../db";
 import { encodeBase32LowerCaseNoPadding, encodeHexLowerCase } from "@oslojs/encoding";
 import { sha256 } from "@oslojs/crypto/sha2";
 

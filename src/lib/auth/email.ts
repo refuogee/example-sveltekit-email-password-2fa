@@ -1,4 +1,4 @@
-import { db } from "./db";
+import { db } from "./../db";
 
 export function verifyEmailInput(email: string): boolean {
 	return /^.+@.+\..+$/.test(email) && email.length < 256;

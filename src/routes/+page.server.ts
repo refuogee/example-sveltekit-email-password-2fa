@@ -1,5 +1,5 @@
 import { fail, redirect } from "@sveltejs/kit";
-import { deleteSessionTokenCookie, invalidateSession } from "$lib/server/session";
+import { deleteSessionTokenCookie, invalidateSession } from "$lib/auth/session";
 
 import type { Actions, PageServerLoadEvent, RequestEvent } from "./$types";
 
