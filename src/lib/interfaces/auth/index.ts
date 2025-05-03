@@ -1,21 +1,23 @@
+import type { SID } from "..";
+
 export namespace IAuth {
-	export type User = {
-		_id: string;
+	export type User = SID<{
 		email: string;
 		username: string;
 		emailVerified: boolean;
 		registered2FA: boolean;
-	};
+	}>;
 
 	export type SessionFlags = {
 		twoFactorVerified: boolean;
 	};
 
-	export type Session = SessionFlags & {
-		_id: string;
-		expiresAt: Date;
-		userId: string;
-	};
+	export type Session = SID<
+		SessionFlags & {
+			expiresAt: Date;
+			userId: string;
+		}
+	>;
 
 	export type SessionValidationResult = { session: Session; user: IAuth.User } | { session: null; user: null };
 
@@ -34,25 +36,23 @@ export namespace IAuth {
 		updatedAt: number;
 	};
 
-	export type PasswordResetSession = {
-		_id: string;
+	export type PasswordResetSession = SID<{
 		userId: string;
 		email: string;
 		expiresAt: Date;
 		code: string;
 		emailVerified: boolean;
 		twoFactorVerified: boolean;
-	};
+	}>;
 
 	export type PasswordResetSessionValidationResult =
 		| { session: PasswordResetSession; user: IAuth.User }
 		| { session: null; user: null };
 
-	export type EmailVerificationRequest = {
-		_id: string;
+	export type EmailVerificationRequest = SID<{
 		userId: string;
 		code: string;
 		email: string;
 		expiresAt: Date;
-	};
+	}>;
 }

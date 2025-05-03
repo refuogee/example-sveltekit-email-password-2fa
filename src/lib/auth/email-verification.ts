@@ -1,10 +1,12 @@
-import { generateRandomOTP } from "./../utils";
+import { createId, generateRandomOTP } from "./../utils";
 import { db } from "./../db";
 import { ExpiringTokenBucket } from "./rate-limit";
 import { encodeBase32 } from "@oslojs/encoding";
 
 import type { RequestEvent } from "@sveltejs/kit";
 import type { IAuth } from "$lib/interfaces/auth";
+import type { SID } from "$lib/interfaces";
+import { AuthModels } from "$lib/schema/auth";
 
 export function getUserEmailVerificationRequest(userId: string, id: string): IAuth.EmailVerificationRequest | null {
 	const row = db.queryOne(
@@ -24,20 +26,25 @@ export function getUserEmailVerificationRequest(userId: string, id: string): IAu
 	return request;
 }
 
-export function createEmailVerificationRequest(userId: string, email: string): IAuth.EmailVerificationRequest {
+export async function createEmailVerificationRequest(
+	userId: string,
+	email: string
+): Promise<IAuth.EmailVerificationRequest> {
 	deleteUserEmailVerificationRequest(userId);
-	const idBytes = new Uint8Array(20);
-	crypto.getRandomValues(idBytes);
-	const _id = encodeBase32(idBytes).toLowerCase();
+
+	const _id = createId();
 
 	const code = generateRandomOTP();
 	const expiresAt = new Date(Date.now() + 1000 * 60 * 10);
-	db.queryOne(
-		"INSERT INTO email_verification_request (id, user_id, code, email, expires_at) VALUES (?, ?, ?, ?, ?) RETURNING id",
-		[_id, userId, code, email, Math.floor(expiresAt.getTime() / 1000)]
-	);
+	await AuthModels.EmailVerificationRequest.create({
+		_id,
+		userId,
+		code,
+		email,
+		expiresAt
+	});
 
-	const request: IAuth.EmailVerificationRequest = {
+	const request: SID<IAuth.EmailVerificationRequest> = {
 		_id,
 		userId,
 		code,
@@ -48,7 +55,7 @@ export function createEmailVerificationRequest(userId: string, email: string): I
 }
 
 export function deleteUserEmailVerificationRequest(userId: string): void {
-	db.execute("DELETE FROM email_verification_request WHERE user_id = ?", [userId]);
+	AuthModels.EmailVerificationRequest.deleteMany({ userId });
 }
 
 export function sendVerificationEmail(email: string, code: string): void {

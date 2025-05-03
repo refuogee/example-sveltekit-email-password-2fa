@@ -32,6 +32,7 @@
 		"@oslojs/otp": "^1.0.0",
 		"@pilcrowjs/db-query": "^0.0.2",
 		"better-sqlite3": "^11.3.0",
+		"mongoose": "^8.14.0",
 		"uqr": "^0.1.2"
 	}
 }

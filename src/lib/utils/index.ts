@@ -1,4 +1,4 @@
-import { encodeBase32UpperCaseNoPadding } from "@oslojs/encoding";
+import { encodeBase32, encodeBase32UpperCaseNoPadding } from "@oslojs/encoding";
 
 export function generateRandomOTP(): string {
 	const bytes = new Uint8Array(5);
@@ -12,4 +12,12 @@ export function generateRandomRecoveryCode(): string {
 	crypto.getRandomValues(recoveryCodeBytes);
 	const recoveryCode = encodeBase32UpperCaseNoPadding(recoveryCodeBytes);
 	return recoveryCode;
+}
+
+export function createId() {
+	const idBytes = new Uint8Array(20);
+
+	crypto.getRandomValues(idBytes);
+
+	return encodeBase32(idBytes).toLowerCase();
 }

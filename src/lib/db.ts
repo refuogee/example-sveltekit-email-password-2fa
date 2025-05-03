@@ -1,28 +1,42 @@
-import sqlite3 from "better-sqlite3";
-import { SyncDatabase } from "@pilcrowjs/db-query";
+import { MONGO_URI } from "$env/static/private";
+import mongoose from "mongoose";
 
-import type { SyncAdapter } from "@pilcrowjs/db-query";
+const MAX_RETRIES = 3;
+const RETRY_DELAY_MS = 2000;
 
-const sqlite = sqlite3("sqlite.db");
-
-const adapter: SyncAdapter<sqlite3.RunResult> = {
-	query: (statement: string, params: unknown[]): unknown[][] => {
-		const result = sqlite
-			.prepare(statement)
-			.raw()
-			.all(...params);
-		return result as unknown[][];
-	},
-	execute: (statement: string, params: unknown[]): sqlite3.RunResult => {
-		const result = sqlite.prepare(statement).run(...params);
-		return result;
+export async function mongoConnect(): Promise<typeof mongoose | null> {
+	if (mongoose.connection.readyState === 1) {
+		// Already connected
+		return mongoose;
 	}
-};
 
-class Database extends SyncDatabase<sqlite3.RunResult> {
-	public inTransaction(): boolean {
-		return sqlite.inTransaction;
+	let attempts = 0;
+
+	while (attempts < MAX_RETRIES) {
+		try {
+			console.log(`📡 Attempt ${attempts + 1} to connect to MongoDB...`);
+
+			console.time("Connecting to MongoDB");
+			await mongoose.connect(MONGO_URI, {
+				serverSelectionTimeoutMS: 5000,
+                autoIndex: false,
+			});
+			console.timeEnd("Connecting to MongoDB");
+
+			console.log(`Connected to MongoDB: ${mongoose.connection.name}`);
+
+			return mongoose;
+		} catch (err) {
+			console.error(`Connection attempt ${attempts + 1} failed:`, err);
+			attempts++;
+
+			if (attempts < MAX_RETRIES) {
+				console.log(`Retrying in ${RETRY_DELAY_MS / 1000} seconds...`);
+				await new Promise((res) => setTimeout(res, RETRY_DELAY_MS));
+			} else {
+				console.error("Failed to connect to MongoDB after 3 attempts.");
+			}
+		}
 	}
+	return null;
 }
-
-export const db = new Database(adapter);

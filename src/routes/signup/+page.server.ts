@@ -1,4 +1,4 @@
-import { fail, redirect } from "@sveltejs/kit";
+import { fail, json, redirect } from "@sveltejs/kit";
 import { RefillingTokenBucket } from "../../lib/auth/rate-limit";
 import { checkEmailAvailability, verifyEmailInput } from "../../lib/auth/email";
 import { createUser, verifyUsernameInput } from "../../lib/auth/user";
@@ -70,7 +70,8 @@ async function action(event: RequestEvent) {
 			username
 		});
 	}
-	const emailAvailable = checkEmailAvailability(email);
+	const emailAvailable = await checkEmailAvailability(email);
+
 	if (!emailAvailable) {
 		return fail(400, {
 			message: "Email is already used",
@@ -78,6 +79,7 @@ async function action(event: RequestEvent) {
 			username
 		});
 	}
+
 	if (!verifyUsernameInput(username)) {
 		return fail(400, {
 			message: "Invalid username",
@@ -85,6 +87,7 @@ async function action(event: RequestEvent) {
 			username
 		});
 	}
+
 	const strongPassword = await verifyPasswordStrength(password);
 	if (!strongPassword) {
 		return fail(400, {
@@ -93,6 +96,7 @@ async function action(event: RequestEvent) {
 			username
 		});
 	}
+
 	if (clientIP !== null && !ipBucket.consume(clientIP, 1)) {
 		return fail(429, {
 			message: "Too many requests",
@@ -100,8 +104,12 @@ async function action(event: RequestEvent) {
 			username
 		});
 	}
+
+	console.log("Passed checks, creating user...");
+
 	const user = await createUser(email, username, password);
-	const emailVerificationRequest = createEmailVerificationRequest(user._id, user.email);
+	console.log("user created", user);
+	const emailVerificationRequest = await createEmailVerificationRequest(user._id, user.email);
 	sendVerificationEmail(emailVerificationRequest.email, emailVerificationRequest.code);
 	setEmailVerificationRequestCookie(event, emailVerificationRequest);
 

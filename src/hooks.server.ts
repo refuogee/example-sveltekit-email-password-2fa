@@ -1,8 +1,8 @@
 import { RefillingTokenBucket } from "$lib/auth/rate-limit";
-import { validateSessionToken, setSessionTokenCookie, deleteSessionTokenCookie } from "$lib/auth/session";
+import { deleteSessionTokenCookie, setSessionTokenCookie, validateSessionToken } from "$lib/auth/session";
 import { sequence } from "@sveltejs/kit/hooks";
-
 import type { Handle } from "@sveltejs/kit";
+import { mongoConnect } from "$lib/db";
 
 const bucket = new RefillingTokenBucket<string>(100, 1);
 
@@ -47,3 +47,5 @@ const authHandle: Handle = async ({ event, resolve }) => {
 };
 
 export const handle = sequence(rateLimitHandle, authHandle);
+
+await mongoConnect();

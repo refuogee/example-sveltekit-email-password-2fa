@@ -1,8 +1,9 @@
+import type { IAuth } from "$lib/interfaces/auth";
+import { AuthModels } from "$lib/schema/auth";
 import { db } from "./../db";
+import { createId, generateRandomRecoveryCode } from "./../utils";
 import { decrypt, decryptToString, encrypt, encryptString } from "./encryption";
 import { hashPassword } from "./password";
-import { generateRandomRecoveryCode } from "./../utils";
-import type { IAuth } from "$lib/interfaces/auth";
 
 export function verifyUsernameInput(username: string): boolean {
 	return username.length > 3 && username.length < 32 && username.trim() === username;
@@ -12,15 +13,23 @@ export async function createUser(email: string, username: string, password: stri
 	const passwordHash = await hashPassword(password);
 	const recoveryCode = generateRandomRecoveryCode();
 	const encryptedRecoveryCode = encryptString(recoveryCode);
-	const row = db.queryOne(
-		"INSERT INTO user (email, username, password_hash, recovery_code) VALUES (?, ?, ?, ?) RETURNING user.id",
-		[email, username, passwordHash, encryptedRecoveryCode]
-	);
-	if (row === null) {
+
+	const created_user = await AuthModels.User.create({
+		_id: createId(),
+		email,
+		username,
+		passwordHash,
+		recoveryCode,
+		encryptedRecoveryCode,
+		emailVerified: false
+	});
+
+	if (!created_user) {
 		throw new Error("Unexpected error");
 	}
+
 	const user: IAuth.User = {
-		_id: row.string(0),
+		_id: created_user._id,
 		username,
 		email,
 		emailVerified: false,

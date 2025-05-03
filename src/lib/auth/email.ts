@@ -1,13 +1,19 @@
-import { db } from "./../db";
+import { AuthModels } from "$lib/schema/auth";
 
 export function verifyEmailInput(email: string): boolean {
 	return /^.+@.+\..+$/.test(email) && email.length < 256;
 }
 
-export function checkEmailAvailability(email: string): boolean {
-	const row = db.queryOne("SELECT COUNT(*) FROM user WHERE email = ?", [email]);
-	if (row === null) {
+export async function checkEmailAvailability(email: string): Promise<boolean> {
+	
+	const row = await AuthModels.User.find({ email });
+
+	
+
+	if (!row) {
+        console.log("this is the error")
 		throw new Error();
 	}
-	return row.number(0) === 0;
+
+	return row.length === 0;
 }

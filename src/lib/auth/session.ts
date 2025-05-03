@@ -88,6 +88,7 @@ export function createSession(token: string, userId: string, flags: IAuth.Sessio
 		expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30),
 		twoFactorVerified: flags.twoFactorVerified
 	};
+    
 	db.execute("INSERT INTO session (id, user_id, expires_at, two_factor_verified) VALUES (?, ?, ?, ?)", [
 		session._id,
 		session.userId,
