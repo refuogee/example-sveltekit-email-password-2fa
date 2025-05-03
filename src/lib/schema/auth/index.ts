@@ -2,7 +2,7 @@ import type { SID } from "$lib/interfaces";
 import type { IAuth } from "$lib/interfaces/auth";
 import mongoose, { Model } from "mongoose";
 
-const User: Model<SID<IAuth.User & { passwordHash: string; totp_key: Blob; recoveryCode: Blob }>> =
+const User: Model<SID<IAuth.User & { passwordHash: string; totp_key: Buffer; recoveryCode: Buffer }>> =
 	mongoose.models["auth_user"] ||
 	mongoose.model(
 		"auth_user",
@@ -55,6 +55,7 @@ const EmailVerificationRequest =
 			{
 				_id: String,
 				userId: { type: String, required: true },
+				code: { type: String, required: true },
 				email: { type: String, required: true },
 				expiresAt: { type: Date, required: true }
 			},

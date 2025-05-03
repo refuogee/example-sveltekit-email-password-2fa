@@ -8,20 +8,25 @@ import type { IAuth } from "$lib/interfaces/auth";
 import type { SID } from "$lib/interfaces";
 import { AuthModels } from "$lib/schema/auth";
 
-export function getUserEmailVerificationRequest(userId: string, id: string): IAuth.EmailVerificationRequest | null {
-	const row = db.queryOne(
-		"SELECT id, user_id, code, email, expires_at FROM email_verification_request WHERE id = ? AND user_id = ?",
-		[id, userId]
-	);
-	if (row === null) {
-		return row;
+export async function getUserEmailVerificationRequest(
+	userId: string,
+	id: string
+): Promise<IAuth.EmailVerificationRequest> {
+	const email_verification_request = await AuthModels.EmailVerificationRequest.findOne({
+		_id: id,
+		userId: userId
+	}).select("_id userId code email expiresAt");
+
+	if (!email_verification_request) {
+		return email_verification_request;
 	}
+
 	const request: IAuth.EmailVerificationRequest = {
-		_id: row.string(0),
-		userId: row.string(1),
-		code: row.string(2),
-		email: row.string(3),
-		expiresAt: new Date(row.number(4) * 1000)
+		_id: email_verification_request._id,
+		userId: email_verification_request.userId,
+		code: email_verification_request.code,
+		email: email_verification_request.email,
+		expiresAt: email_verification_request.expiresAt
 	};
 	return request;
 }
@@ -52,6 +57,7 @@ export async function createEmailVerificationRequest(
 		email,
 		expiresAt
 	};
+
 	return request;
 }
 
@@ -83,15 +89,21 @@ export function deleteEmailVerificationRequestCookie(event: RequestEvent): void 
 	});
 }
 
-export function getUserEmailVerificationRequestFromRequest(event: RequestEvent): IAuth.EmailVerificationRequest | null {
+export async function getUserEmailVerificationRequestFromRequest(
+	event: RequestEvent
+): Promise<IAuth.EmailVerificationRequest | null> {
 	if (event.locals.user === null) {
 		return null;
 	}
+
 	const id = event.cookies.get("email_verification") ?? null;
+
 	if (id === null) {
 		return null;
 	}
-	const request = getUserEmailVerificationRequest(event.locals.user.id, id);
+
+	const request = await getUserEmailVerificationRequest(event.locals.user._id, id);
+
 	if (request === null) {
 		deleteEmailVerificationRequestCookie(event);
 	}

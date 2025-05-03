@@ -28,13 +28,15 @@ const rateLimitHandle: Handle = async ({ event, resolve }) => {
 
 const authHandle: Handle = async ({ event, resolve }) => {
 	const token = event.cookies.get("session") ?? null;
+
 	if (token === null) {
 		event.locals.user = null;
 		event.locals.session = null;
 		return resolve(event);
 	}
 
-	const { session, user } = validateSessionToken(token);
+	const { session, user } = await validateSessionToken(token);
+
 	if (session !== null) {
 		setSessionTokenCookie(event, token, session.expiresAt);
 	} else {

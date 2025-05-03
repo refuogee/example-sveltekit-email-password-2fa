@@ -52,7 +52,7 @@ async function action(event: RequestEvent) {
 			message: "Forbidden"
 		});
 	}
-	if (!totpUpdateBucket.check(event.locals.user.id, 1)) {
+	if (!totpUpdateBucket.check(event.locals.user._id, 1)) {
 		return fail(429, {
 			message: "Too many requests"
 		});
@@ -89,7 +89,7 @@ async function action(event: RequestEvent) {
 			message: "Invalid key"
 		});
 	}
-	if (!totpUpdateBucket.consume(event.locals.user.id, 1)) {
+	if (!totpUpdateBucket.consume(event.locals.user._id, 1)) {
 		return fail(429, {
 			message: "Too many requests"
 		});
@@ -100,6 +100,6 @@ async function action(event: RequestEvent) {
 		});
 	}
 	updateUserTOTPKey(event.locals.session.userId, key);
-	setSessionAs2FAVerified(event.locals.session.id);
+	await setSessionAs2FAVerified(event.locals.session._id);
 	return redirect(302, "/recovery-code");
 }

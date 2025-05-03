@@ -31,7 +31,7 @@ async function action(event: RequestEvent) {
 			message: "Not authenticated"
 		});
 	}
-	invalidateSession(event.locals.session.id);
+	invalidateSession(event.locals.session._id);
 	deleteSessionTokenCookie(event);
 	return redirect(302, "/login");
 }

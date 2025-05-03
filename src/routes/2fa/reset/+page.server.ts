@@ -34,7 +34,7 @@ async function action(event: RequestEvent) {
 			message: "Forbidden"
 		});
 	}
-	if (!recoveryCodeBucket.check(event.locals.user.id, 1)) {
+	if (!recoveryCodeBucket.check(event.locals.user._id, 1)) {
 		return fail(429, {
 			message: "Too many requests"
 		});
@@ -52,17 +52,17 @@ async function action(event: RequestEvent) {
 			message: "Please enter your code"
 		});
 	}
-	if (!recoveryCodeBucket.consume(event.locals.user.id, 1)) {
+	if (!recoveryCodeBucket.consume(event.locals.user._id, 1)) {
 		return fail(429, {
 			message: "Too many requests"
 		});
 	}
-	const valid = resetUser2FAWithRecoveryCode(event.locals.user.id, code);
+	const valid = resetUser2FAWithRecoveryCode(event.locals.user._id, code);
 	if (!valid) {
 		return fail(400, {
 			message: "Invalid recovery code"
 		});
 	}
-	recoveryCodeBucket.reset(event.locals.user.id);
+	recoveryCodeBucket.reset(event.locals.user._id);
 	return redirect(302, "/2fa/setup");
 }

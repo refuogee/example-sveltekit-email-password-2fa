@@ -21,18 +21,44 @@ export function encryptString(data: string): Uint8Array {
 	return encrypt(new TextEncoder().encode(data));
 }
 
-export function decrypt(encrypted: Uint8Array): Uint8Array {
-	if (encrypted.byteLength < 33) {
-		throw new Error("Invalid data");
-	}
-	const decipher = createDecipheriv("aes-128-gcm", key, encrypted.slice(0, 16));
-	decipher.setAuthTag(encrypted.slice(encrypted.byteLength - 16));
-	const decrypted = new DynamicBuffer(0);
-	decrypted.write(decipher.update(encrypted.slice(16, encrypted.byteLength - 16)));
-	decrypted.write(decipher.final());
-	return decrypted.bytes();
+export function decrypt(data: Buffer): Uint8Array {
+    const uint8Data = new Uint8Array(data.buffer);
+
+    const iv = uint8Data.slice(0, 12);  // First 12 bytes: IV
+    const authTag = uint8Data.slice(-16); // Last 16 bytes: Authentication Tag
+    const ciphertext = uint8Data.slice(12, -16);  // Data between IV and AuthTag
+
+    console.log("IV:", iv);
+    console.log("AuthTag:", authTag);
+    console.log("Ciphertext:", ciphertext);
+
+    if (ciphertext.length === 0) {
+        throw new Error("Ciphertext is missing or invalid.");
+    }
+
+    const decipher = createDecipheriv("aes-128-gcm", key, iv);
+    decipher.setAuthTag(authTag);
+
+    try {
+        const decrypted = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
+        return decrypted;
+    } catch (err) {
+        throw new Error("Decryption failed: " + err);
+    }
 }
 
-export function decryptToString(data: Uint8Array): string {
+// export function decrypt(encrypted: Uint8Array): Uint8Array {
+// 	// if (encrypted.byteLength < 33) {
+// 	// 	throw new Error("Invalid data");
+// 	// }
+// 	const decipher = createDecipheriv("aes-128-gcm", key, encrypted.slice(0, 16));
+// 	decipher.setAuthTag(encrypted.slice(encrypted.byteLength - 16));
+// 	const decrypted = new DynamicBuffer(0);
+// 	decrypted.write(decipher.update(encrypted.slice(16, encrypted.byteLength - 16)));
+// 	decrypted.write(decipher.final());
+// 	return decrypted.bytes();
+// }
+
+export function decryptToString(data: Buffer): string {
 	return new TextDecoder().decode(decrypt(data));
 }

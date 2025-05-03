@@ -5,43 +5,46 @@ import type { RequestEvent } from "@sveltejs/kit";
 import type { IAuth } from "$lib/interfaces/auth";
 import { AuthModels } from "$lib/schema/auth";
 
-export function validateSessionToken(token: string): IAuth.SessionValidationResult {
+export async function validateSessionToken(token: string): Promise<IAuth.SessionValidationResult> {
 	const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
-	const row = db.queryOne(
-		`
-SELECT session.id, session.user_id, session.expires_at, session.two_factor_verified, user.id, user.email, user.username, user.email_verified, IIF(user.totp_key IS NOT NULL, 1, 0) FROM session
-INNER JOIN user ON session.user_id = user.id
-WHERE session.id = ?
-`,
-		[sessionId]
-	);
 
-	if (row === null) {
+	const session_data = await AuthModels.Session.findOne({ _id: sessionId });
+	if (!session_data) {
 		return { session: null, user: null };
 	}
+
+	const user_data = await AuthModels.User.findOne({ _id: session_data.userId });
+
+	if (!user_data) {
+		console.log("User not found");
+		return { session: null, user: null };
+	}
+
 	const session: IAuth.Session = {
-		_id: row.string(0),
-		userId: row.string(1),
-		expiresAt: new Date(row.number(2) * 1000),
-		twoFactorVerified: Boolean(row.number(3))
+		_id: session_data._id,
+		userId: session_data.userId,
+		expiresAt: session_data.expiresAt,
+		twoFactorVerified: session_data.twoFactorVerified
 	};
+
 	const user: IAuth.User = {
-		_id: row.string(4),
-		email: row.string(5),
-		username: row.string(6),
-		emailVerified: Boolean(row.number(7)),
-		registered2FA: Boolean(row.number(8))
+		_id: session_data.userId,
+		email: user_data.email,
+		username: user_data.username,
+		emailVerified: user_data.emailVerified,
+		registered2FA: session_data.twoFactorVerified
 	};
+
 	if (Date.now() >= session.expiresAt.getTime()) {
-		db.execute("DELETE FROM session WHERE id = ?", [session._id]);
+		await AuthModels.Session.deleteOne({ _id: session._id });
 		return { session: null, user: null };
 	}
 	if (Date.now() >= session.expiresAt.getTime() - 1000 * 60 * 60 * 24 * 15) {
 		session.expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
-		db.execute("UPDATE session SET expires_at = ? WHERE session.id = ?", [
-			Math.floor(session.expiresAt.getTime() / 1000),
-			session._id
-		]);
+		await AuthModels.Session.updateOne(
+			{ _id: session._id }, // filter by _id
+			{ $set: { expiresAt: session.expiresAt } } // set the new expiresAt value
+		);
 	}
 	return { session, user };
 }
@@ -88,7 +91,7 @@ export async function createSession(token: string, userId: string, flags: IAuth.
 		_id: sessionId,
 		userId,
 		expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30),
-        
+
 		twoFactorVerified: flags.twoFactorVerified
 	};
 
@@ -102,6 +105,7 @@ export async function createSession(token: string, userId: string, flags: IAuth.
 	return session;
 }
 
-export function setSessionAs2FAVerified(sessionId: string): void {
-	db.execute("UPDATE session SET two_factor_verified = 1 WHERE id = ?", [sessionId]);
+export async function setSessionAs2FAVerified(sessionId: string): Promise<void> {
+	await AuthModels.Session.updateOne({ _id: sessionId }, { $set: { twoFactorVerified: true } });
+	// db.execute("UPDATE session SET two_factor_verified = 1 WHERE id = ?", [sessionId]);
 }

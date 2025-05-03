@@ -43,8 +43,8 @@ export async function updateUserPassword(userId: string, password: string): Prom
 	db.execute("UPDATE user SET password_hash = ? WHERE id = ?", [passwordHash, userId]);
 }
 
-export function updateUserEmailAndSetEmailAsVerified(userId: string, email: string): void {
-	db.execute("UPDATE user SET email = ?, email_verified = 1 WHERE id = ?", [email, userId]);
+export async function updateUserEmailAndSetEmailAsVerified(userId: string, email: string): Promise<void> {
+	await AuthModels.User.updateOne({ _id: userId }, { $set: { email, emailVerified: true } });
 }
 
 export function setUserAsEmailVerifiedIfEmailMatches(userId: string, email: string): boolean {
@@ -60,12 +60,14 @@ export function getUserPasswordHash(userId: string): string {
 	return row.string(0);
 }
 
-export function getUserRecoverCode(userId: string): string {
-	const row = db.queryOne("SELECT recovery_code FROM user WHERE id = ?", [userId]);
-	if (row === null) {
+export async function getUserRecoverCode(userId: string): Promise<string> {
+	const recovery_code = await AuthModels.User.findOne({ _id: userId });
+
+	if (!recovery_code) {
 		throw new Error("Invalid user ID");
 	}
-	return decryptToString(row.bytes(0));
+
+	return recovery_code.recoveryCode.toString();
 }
 
 export function getUserTOTPKey(userId: string): Uint8Array | null {
@@ -80,9 +82,11 @@ export function getUserTOTPKey(userId: string): Uint8Array | null {
 	return decrypt(encrypted);
 }
 
-export function updateUserTOTPKey(userId: string, key: Uint8Array): void {
+export async function updateUserTOTPKey(userId: string, key: Uint8Array): Promise<void> {
+	console.log("updateUserTOTPKey", userId, key);
 	const encrypted = encrypt(key);
-	db.execute("UPDATE user SET totp_key = ? WHERE id = ?", [encrypted, userId]);
+	console.log("encrypted", encrypted);
+	await AuthModels.User.updateOne({ _id: userId }, { $set: { totp_key: Buffer.from(encrypted) } });
 }
 
 export function resetUserRecoveryCode(userId: string): string {

@@ -5,6 +5,7 @@ import { sha256 } from "@oslojs/crypto/sha2";
 
 import type { RequestEvent } from "@sveltejs/kit";
 import type { IAuth } from "$lib/interfaces/auth";
+import { AuthModels } from "$lib/schema/auth";
 
 export function createPasswordResetSession(token: string, userId: string, email: string): IAuth.PasswordResetSession {
 	const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
@@ -70,8 +71,8 @@ export function setPasswordResetSessionAs2FAVerified(sessionId: string): void {
 	db.execute("UPDATE password_reset_session SET two_factor_verified = 1 WHERE id = ?", [sessionId]);
 }
 
-export function invalidateUserPasswordResetSessions(userId: string): void {
-	db.execute("DELETE FROM password_reset_session WHERE user_id = ?", [userId]);
+export async function invalidateUserPasswordResetSessions(userId: string): Promise<void> {
+	await AuthModels.PasswordResetSession.deleteMany({ userId });
 }
 
 export function validatePasswordResetSessionRequest(event: RequestEvent): IAuth.PasswordResetSessionValidationResult {

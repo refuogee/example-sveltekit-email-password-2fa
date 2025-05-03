@@ -24,7 +24,7 @@ export async function load(event: RequestEvent) {
 	}
 	let recoveryCode: string | null = null;
 	if (event.locals.user.registered2FA) {
-		recoveryCode = getUserRecoverCode(event.locals.user.id);
+		recoveryCode = await getUserRecoverCode(event.locals.user._id);
 	}
 	return {
 		recoveryCode,
@@ -52,7 +52,7 @@ async function updatePasswordAction(event: RequestEvent) {
 			}
 		});
 	}
-	if (!passwordUpdateBucket.check(event.locals.session.id, 1)) {
+	if (!passwordUpdateBucket.check(event.locals.session._id, 1)) {
 		return fail(429, {
 			password: {
 				message: "Too many requests"
@@ -79,7 +79,7 @@ async function updatePasswordAction(event: RequestEvent) {
 		});
 	}
 
-	if (!passwordUpdateBucket.consume(event.locals.session.id, 1)) {
+	if (!passwordUpdateBucket.consume(event.locals.session._id, 1)) {
 		return fail(429, {
 			password: {
 				message: "Too many requests"
@@ -87,7 +87,7 @@ async function updatePasswordAction(event: RequestEvent) {
 		});
 	}
 
-	const passwordHash = getUserPasswordHash(event.locals.user.id);
+	const passwordHash = getUserPasswordHash(event.locals.user._id);
 	const validPassword = await verifyPasswordHash(passwordHash, password);
 	if (!validPassword) {
 		return fail(400, {
@@ -96,15 +96,15 @@ async function updatePasswordAction(event: RequestEvent) {
 			}
 		});
 	}
-	passwordUpdateBucket.reset(event.locals.session.id);
-	invalidateUserSessions(event.locals.user.id);
-	await updateUserPassword(event.locals.user.id, newPassword);
+	passwordUpdateBucket.reset(event.locals.session._id);
+	invalidateUserSessions(event.locals.user._id);
+	await updateUserPassword(event.locals.user._id, newPassword);
 
 	const sessionToken = generateSessionToken();
 	const sessionFlags: IAuth.SessionFlags = {
 		twoFactorVerified: event.locals.session.twoFactorVerified
 	};
-	const session = createSession(sessionToken, event.locals.user.id, sessionFlags);
+	const session = await createSession(sessionToken, event.locals.user._id, sessionFlags);
 	setSessionTokenCookie(event, sessionToken, session.expiresAt);
 	return {
 		password: {
@@ -128,7 +128,7 @@ async function updateEmailAction(event: RequestEvent) {
 			}
 		});
 	}
-	if (!sendVerificationEmailBucket.check(event.locals.user.id, 1)) {
+	if (!sendVerificationEmailBucket.check(event.locals.user._id, 1)) {
 		return fail(429, {
 			email: {
 				message: "Too many requests"
@@ -167,14 +167,14 @@ async function updateEmailAction(event: RequestEvent) {
 			}
 		});
 	}
-	if (!sendVerificationEmailBucket.consume(event.locals.user.id, 1)) {
+	if (!sendVerificationEmailBucket.consume(event.locals.user._id, 1)) {
 		return fail(429, {
 			email: {
 				message: "Too many requests"
 			}
 		});
 	}
-	const verificationRequest = createEmailVerificationRequest(event.locals.user.id, email);
+	const verificationRequest = await createEmailVerificationRequest(event.locals.user._id, email);
 	sendVerificationEmail(verificationRequest.email, verificationRequest.code);
 	setEmailVerificationRequestCookie(event, verificationRequest);
 	return redirect(302, "/verify-email");

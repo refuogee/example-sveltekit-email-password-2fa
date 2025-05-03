@@ -37,7 +37,7 @@ async function action(event: RequestEvent) {
 			message: "Forbidden"
 		});
 	}
-	if (!totpBucket.check(event.locals.user.id, 1)) {
+	if (!totpBucket.check(event.locals.user._id, 1)) {
 		return fail(429, {
 			message: "Too many requests"
 		});
@@ -55,12 +55,12 @@ async function action(event: RequestEvent) {
 			message: "Enter your code"
 		});
 	}
-	if (!totpBucket.consume(event.locals.user.id, 1)) {
+	if (!totpBucket.consume(event.locals.user._id, 1)) {
 		return fail(429, {
 			message: "Too many requests"
 		});
 	}
-	const totpKey = getUserTOTPKey(event.locals.user.id);
+	const totpKey = getUserTOTPKey(event.locals.user._id);
 	if (totpKey === null) {
 		return fail(403, {
 			message: "Forbidden"
@@ -71,7 +71,7 @@ async function action(event: RequestEvent) {
 			message: "Invalid code"
 		});
 	}
-	totpBucket.reset(event.locals.user.id);
-	setSessionAs2FAVerified(event.locals.session.id);
+	totpBucket.reset(event.locals.user._id);
+	setSessionAs2FAVerified(event.locals.session._id);
 	return redirect(302, "/");
 }
