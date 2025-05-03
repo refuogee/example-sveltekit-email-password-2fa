@@ -3,6 +3,7 @@ import { encodeBase32LowerCaseNoPadding, encodeHexLowerCase } from "@oslojs/enco
 import { sha256 } from "@oslojs/crypto/sha2";
 import type { RequestEvent } from "@sveltejs/kit";
 import type { IAuth } from "$lib/interfaces/auth";
+import { AuthModels } from "$lib/schema/auth";
 
 export function validateSessionToken(token: string): IAuth.SessionValidationResult {
 	const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
@@ -80,21 +81,24 @@ export function generateSessionToken(): string {
 	return token;
 }
 
-export function createSession(token: string, userId: string, flags: IAuth.SessionFlags): IAuth.Session {
+export async function createSession(token: string, userId: string, flags: IAuth.SessionFlags): Promise<IAuth.Session> {
 	const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
+
 	const session: IAuth.Session = {
 		_id: sessionId,
 		userId,
 		expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30),
+        
 		twoFactorVerified: flags.twoFactorVerified
 	};
-    
-	db.execute("INSERT INTO session (id, user_id, expires_at, two_factor_verified) VALUES (?, ?, ?, ?)", [
-		session._id,
-		session.userId,
-		Math.floor(session.expiresAt.getTime() / 1000),
-		Number(session.twoFactorVerified)
-	]);
+
+	await AuthModels.Session.create({
+		_id: session._id,
+		userId: session.userId,
+		expiresAt: session.expiresAt,
+		twoFactorVerified: session.twoFactorVerified
+	});
+
 	return session;
 }
 

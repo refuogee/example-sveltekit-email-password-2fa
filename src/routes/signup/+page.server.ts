@@ -117,7 +117,7 @@ async function action(event: RequestEvent) {
 		twoFactorVerified: false
 	};
 	const sessionToken = generateSessionToken();
-	const session = createSession(sessionToken, user._id, sessionFlags);
+	const session = await createSession(sessionToken, user._id, sessionFlags);
 	setSessionTokenCookie(event, sessionToken, session.expiresAt);
 	throw redirect(302, "/2fa/setup");
 }

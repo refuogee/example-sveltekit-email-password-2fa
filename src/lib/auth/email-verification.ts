@@ -36,6 +36,7 @@ export async function createEmailVerificationRequest(
 
 	const code = generateRandomOTP();
 	const expiresAt = new Date(Date.now() + 1000 * 60 * 10);
+
 	await AuthModels.EmailVerificationRequest.create({
 		_id,
 		userId,
